@@ -11,7 +11,7 @@ import sys
 from operator import itemgetter
 
 def sort_cars(state, sortby):
-    return sorted(state, key=itemgetter(sortby), reverse=(sortby != 'track'))
+    return sorted(state, key=itemgetter(sortby), reverse=(sortby == 'laps'))
 
 def update(stdscr, state):
     try:
@@ -20,14 +20,14 @@ def update(stdscr, state):
         stdscr.erase()
         header = "--- Egebakken Race Timer ---\n\n"
         stdscr.addstr(0, (maxx-len(header))//2, header, curses.A_BOLD)
-        stdscr.addstr("Pos  Track  Car            Laps   Last      Best      Current\n", curses.A_UNDERLINE)
+        stdscr.addstr("Pos  Track  Car            Laps   Last     Best     Current\n", curses.A_UNDERLINE)
         position = 1
         for car in state:
             if car['time'] > 0:
                 running = now - car['time']
             else:
                 running = 0
-            stdscr.addstr("{:<3}  {:<5}  {:13s}  {:03}  {:7.3f}s  {:7.3f}s  {:7.3f}s\n".format(
+            stdscr.addstr("{:<3}  {:<5}  {:13s}  {:03}  {:7.3f}  {:7.3f}  {:7.3f}\n".format(
                 position,
                 car['track'],
                 car['name'],
@@ -57,7 +57,7 @@ def reset_state(state):
         car['time'] = 0
         car['laps'] = 0
         car['lastlap'] = 0
-        car['bestlap'] = 0
+        car['bestlap'] = float('inf')
 
 def main():
     parser = argparse.ArgumentParser()
