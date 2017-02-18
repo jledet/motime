@@ -8,6 +8,11 @@ import serial
 import curses
 import sys
 
+from operator import itemgetter
+
+def sort_cars(state, sortby):
+    return sorted(state, key=itemgetter(sortby), reverse=(sortby != 'track'))
+
 def update(stdscr, state):
     try:
         maxy, maxx = stdscr.getmaxyx()
@@ -15,21 +20,22 @@ def update(stdscr, state):
         stdscr.erase()
         header = "--- Egebakken Race Timer ---\n\n"
         stdscr.addstr(0, (maxx-len(header))//2, header, curses.A_BOLD)
-        stdscr.addstr("Pos  Car            Laps   Last      Best      Current\n", curses.A_UNDERLINE)
-        track = 1
+        stdscr.addstr("Pos  Track  Car            Laps   Last      Best      Current\n", curses.A_UNDERLINE)
+        position = 1
         for car in state:
             if car['time'] > 0:
                 running = now - car['time']
             else:
                 running = 0
-            stdscr.addstr("{:<3}  {:13s}  {:03}  {:7.3f}s  {:7.3f}s  {:7.3f}s\n".format(
-                track,
+            stdscr.addstr("{:<3}  {:<5}  {:13s}  {:03}  {:7.3f}s  {:7.3f}s  {:7.3f}s\n".format(
+                position,
+                car['track'],
                 car['name'],
                 car['laps'],
                 car['lastlap'],
                 car['bestlap'],
                 running))
-            track += 1
+            position += 1
         stdscr.addstr(maxy-2, 0, "\nPress Q to quit, R to reset", curses.A_DIM)
         stdscr.refresh()
     except:
@@ -57,15 +63,18 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--baudrate', help='UART bitrate', type=int, default=9600)
     parser.add_argument('-d', '--device', help='UART device', default='/dev/ttyUSB0')
-    parser.add_argument('-c', '--cars', help='Comma separated list of drivers', default='')
+    parser.add_argument('-w', '--winner', help='Winning ', default='track', choices=('track', 'laps', 'bestlap'))
+    parser.add_argument('drivers', help='Comma separated list of drivers')
 
     args = parser.parse_args()
 
     s = serial.Serial(args.device, args.baudrate, timeout=0.1)
 
     state = []
-    for name in args.cars.split(','):
-        state.append({'name': name})
+    track = 1
+    for name in args.drivers.split(','):
+        state.append({'name': name, 'track': track})
+        track += 1
     reset_state(state)
 
     stdscr = curses.initscr()
@@ -75,7 +84,7 @@ def main():
     curses.curs_set(0)
 
     while True:
-        if not update(stdscr, state):
+        if not update(stdscr, sort_cars(state, sortby=args.winner)):
             break
         data = s.read(1)
 
