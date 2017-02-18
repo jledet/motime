@@ -10,30 +10,40 @@ import sys
 
 def update(stdscr, state):
     try:
+        maxy, maxx = stdscr.getmaxyx()
         now = time.time()
         stdscr.erase()
-        stdscr.addstr("Egebakken Race Timer\n\n")
-        stdscr.addstr("Car              Laps   Last      Best      Current\n")
-        stdscr.addstr("---------------------------------------------------\n")
+        header = "--- Egebakken Race Timer ---\n\n"
+        stdscr.addstr(0, (maxx-len(header))//2, header, curses.A_BOLD)
+        stdscr.addstr("Pos  Car            Laps   Last      Best      Current\n", curses.A_UNDERLINE)
+        track = 1
         for car in state:
             if car['time'] > 0:
                 running = now - car['time']
             else:
                 running = 0
-            stdscr.addstr("{:15s}  {:03}  {:7.3f}s  {:7.3f}s  {:7.3f}s\n".format(
+            stdscr.addstr("{:<3}  {:13s}  {:03}  {:7.3f}s  {:7.3f}s  {:7.3f}s\n".format(
+                track,
                 car['name'],
                 car['laps'],
                 car['lastlap'],
                 car['bestlap'],
                 running))
+            track += 1
+        stdscr.addstr(maxy-2, 0, "\nPress Q to quit, R to reset", curses.A_DIM)
         stdscr.refresh()
-    except KeyboardInterrupt:
+    except:
         return False
-    except Exception as e:
-        return False
-    finally:
-        if stdscr.getch() >= 0:
-            return False
+    else:
+        try:
+            ch = stdscr.getkey()
+        except:
+            pass
+        else:
+            if ch.lower() == 'q':
+                return False
+            elif ch.lower() == 'r':
+                reset_state(state)
         return True
 
 def reset_state(state):
